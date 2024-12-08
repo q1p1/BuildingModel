@@ -22,13 +22,19 @@ const useSceneView = () => {
       map: webscene,
       center: [-117.33378013520932, 33.95723222749059],
       zoom: 18,
+      popupEnabled: false,
+      ui: {
+        components: ["zoom"],
+      },
     });
 
-    const graphicsLayerInstance = new GraphicsLayer();
-    webscene.add(graphicsLayerInstance);
+    sceneView.ui.remove("attribution");
+    sceneView.ui.move("zoom", "top-right");
 
+    const layer = new GraphicsLayer();
+    webscene.add(layer);
+    setGraphicsLayer(layer);
     setView(sceneView);
-    setGraphicsLayer(graphicsLayerInstance);
 
     return () => {
       sceneView.destroy();

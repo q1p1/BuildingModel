@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState, useEffect } from "react";
 import WebScene from "@arcgis/core/WebScene";
 import SceneView from "@arcgis/core/views/SceneView";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
-import Graphic from "@arcgis/core/Graphic";
+import PointDetailsWidget from "./components/PointDetailsWidget";
+import StatisticsWidget from "./components/StatisticsWidget";
+import Controls from "./components/Controls";
 import { addBuilding } from "./components/AddBuilding";
 import { add3DPoints } from "./components/Add3DPoints";
 import { addHeatmapLayer } from "./components/AddHeatmap";
@@ -11,17 +14,18 @@ function App() {
   const [graphicsLayer, setGraphicsLayer] = useState<GraphicsLayer | null>(
     null
   );
-  const [buildingGraphic, setBuildingGraphic] = useState<Graphic | null>(null);
-  const [pointsGraphics, setPointsGraphics] = useState<Graphic[] | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [selectedPoint, setSelectedPoint] = useState<any>(null); // State to store selected point info
+  const [buildingGraphic, setBuildingGraphic] = useState<any>(null);
+  const [pointsGraphics, setPointsGraphics] = useState<any[]>([]);
+  const [selectedPoint, setSelectedPoint] = useState<any>(null);
+  const [totalWorkers, setTotalWorkers] = useState(0);
+  const [totalBuildings, setTotalBuildings] = useState(0);
 
   useEffect(() => {
     const viewDiv = document.getElementById("viewDiv") as HTMLDivElement;
 
     const webscene = new WebScene({
       basemap: "streets-night-vector",
-      ground: { surfaceColor: "white" }, // Hide terrain
+      ground: { surfaceColor: "white" },
     });
 
     const view = new SceneView({
@@ -29,22 +33,21 @@ function App() {
       map: webscene,
       center: [-117.33378013520932, 33.95723222749059],
       zoom: 18,
-      popupEnabled: false, // Completely disable all popups
+      popupEnabled: false,
       ui: {
-        components: ["zoom"], // Show only zoom controls
+        components: ["zoom"],
       },
     });
 
-    // Remove attribution and move zoom controls
-    view.ui.remove("attribution"); // Remove the attribution widget
-    view.ui.move("zoom", "top-right"); // Move zoom controls to top-right
+    view.ui.remove("attribution");
+    view.ui.move("zoom", "top-right");
 
     const graphicsLayerInstance = new GraphicsLayer();
     webscene.add(graphicsLayerInstance);
     setGraphicsLayer(graphicsLayerInstance);
+
     addHeatmapLayer(webscene);
 
-    // Add click event to update Widget content
     view.on("click", (event) => {
       view.hitTest(event).then((response) => {
         const results = response.results.filter(
@@ -54,7 +57,6 @@ function App() {
         if (results.length > 0) {
           const graphic = results[0].graphic;
           if (graphic) {
-            // Set selected point details
             setSelectedPoint({
               name: graphic.getAttribute("name"),
               age: graphic.getAttribute("age"),
@@ -63,7 +65,6 @@ function App() {
             });
           }
         } else {
-          // Clear the widget if no point is selected
           setSelectedPoint(null);
         }
       });
@@ -80,96 +81,42 @@ function App() {
     if (buildingGraphic) {
       graphicsLayer.remove(buildingGraphic);
       setBuildingGraphic(null);
+      setTotalBuildings((prev) => prev - 1);
     } else {
       const building = addBuilding(graphicsLayer);
       setBuildingGraphic(building);
+      setTotalBuildings((prev) => prev + 1);
     }
   };
+
   const togglePoints = () => {
     if (!graphicsLayer) return;
 
-    if (pointsGraphics && pointsGraphics.length > 0) {
-      pointsGraphics.forEach((point) => graphicsLayer.remove(point));
-      setPointsGraphics(null);
+    if (pointsGraphics.length > 0) {
+      pointsGraphics.forEach((graphic) => graphicsLayer.remove(graphic));
+      setPointsGraphics([]);
+      setTotalWorkers(0);
     } else {
       const points = add3DPoints(graphicsLayer);
       setPointsGraphics(points);
+      setTotalWorkers(points.length);
     }
   };
 
   return (
     <>
       <div id="viewDiv" style={{ height: "100vh", width: "100%" }} />
-
-      <div
-        style={{
-          position: "absolute",
-          top: "10px",
-          right: "10px",
-          zIndex: 1000,
-          backgroundColor: "white",
-          padding: "10px",
-          border: "1px solid black",
-          borderRadius: "5px",
-          minWidth: "200px",
-        }}
-      >
-        {selectedPoint ? (
-          <div>
-            <h3>Point Details</h3>
-            <ul>
-              <li>
-                <b>Name:</b> {selectedPoint.name}
-              </li>
-              <li>
-                <b>Age:</b> {selectedPoint.age}
-              </li>
-              <li>
-                <b>Company:</b> {selectedPoint.company}
-              </li>
-              <li>
-                <b>Job ID:</b> {selectedPoint.jobId}
-              </li>
-            </ul>
-          </div>
-        ) : (
-          <p>Click on a point to see details</p>
-        )}
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          top: "10px",
-          left: "10px",
-          zIndex: 1000,
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px",
-        }}
-      >
-        <button
-          onClick={toggleBuilding}
-          style={{
-            backgroundColor: "white",
-            border: "1px solid black",
-            padding: "10px",
-            cursor: "pointer",
-          }}
-        >
-          {buildingGraphic ? "Delete building" : "add building"}
-        </button>
-        <button
-          onClick={togglePoints}
-          style={{
-            backgroundColor: "white",
-            border: "1px solid black",
-            padding: "10px",
-            cursor: "pointer",
-          }}
-        >
-          {pointsGraphics ? "Delete points" : "Add points"}
-        </button>
-      </div>
+      <PointDetailsWidget selectedPoint={selectedPoint} />
+      <StatisticsWidget
+        totalWorkers={totalWorkers}
+        totalBuildings={totalBuildings}
+      />
+      <Controls
+        toggleBuilding={toggleBuilding}
+        togglePoints={togglePoints}
+        hasBuilding={!!buildingGraphic}
+        hasPoints={pointsGraphics.length > 0}
+      />
     </>
   );
 }

@@ -2,6 +2,9 @@ import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import Graphic from "@arcgis/core/Graphic";
 import Point from "@arcgis/core/geometry/Point";
 import PopupTemplate from "@arcgis/core/PopupTemplate";
+import PointSymbol3D from "@arcgis/core/symbols/PointSymbol3D";
+import ObjectSymbol3DLayer from "@arcgis/core/symbols/ObjectSymbol3DLayer";
+
 import pointsData from "../data/points.json";
 export const add3DPoints = (graphicsLayer: GraphicsLayer): Graphic[] => {
   const pointsGraphics: Graphic[] = [];
@@ -19,6 +22,20 @@ export const add3DPoints = (graphicsLayer: GraphicsLayer): Graphic[] => {
       `,
     });
 
+    const symbol = new PointSymbol3D({
+      symbolLayers: [
+        new ObjectSymbol3DLayer({
+          resource: {
+            href: point.model,
+          },
+          height: point.size,
+          material: {
+            color: "red",
+          },
+        }),
+      ],
+    });
+
     // Create the 3D point graphic
     const modelGraphic = new Graphic({
       geometry: new Point({
@@ -26,18 +43,7 @@ export const add3DPoints = (graphicsLayer: GraphicsLayer): Graphic[] => {
         latitude: point.latitude,
         z: point.z,
       }),
-      symbol: {
-        type: "point-3d",
-        symbolLayers: [
-          {
-            type: "object",
-            resource: {
-              href: point.model,
-            },
-            height: point.size,
-          },
-        ],
-      } as __esri.PointSymbol3DProperties,
+      symbol,
       attributes: point, // Attach attributes for Popup
       popupTemplate, // Attach the PopupTemplate
     });

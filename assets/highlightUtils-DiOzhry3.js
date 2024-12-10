@@ -1,1 +1,0 @@
-import{H as o}from"./languageUtils-Bw27fPDq.js";import{V as n,ab as e}from"./index-Dr8Kof1t.js";function f(r){return i(r)||o(r)?[r]:n.isCollection(r)?r.toArray():Array.isArray(r)?r:s}function i(r){return typeof r=="number"||typeof r=="string"}const s=[],m=e();export{i as e,f as n,m as s};

@@ -1,0 +1,1 @@
+import{dH as i}from"./index-HdUx8m3z.js";import{s as n}from"./SnappingManagerPool-BuFx_N9i.js";class s extends n{constructor(t,o,r){super(o,r),this.point=t}equals(t){return t instanceof s&&i(this.point,t.point)}}export{s as n};
